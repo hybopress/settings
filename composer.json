@@ -1,0 +1,62 @@
+{
+    "name": "hbp/settings",
+    "description": "Layered settings resolution for Hybrid Core themes and plugins.",
+    "license": "GPL-2.0-or-later",
+    "type": "library",
+    "keywords": [
+        "wordpress"
+    ],
+    "authors": [
+        {
+            "name": "Hybopress Themes",
+            "email": "hybopressthemes@gmail.com",
+            "homepage": "https://hybopressthemes.com",
+            "role": "Developer"
+        }
+    ],
+    "homepage": "https://github.com/hybopress/settings",
+    "support": {
+        "issues": "https://github.com/hybopress/settings/issues"
+    },
+    "require": {
+        "php": ">=8.2",
+        "themehybrid/hybrid-contracts": "^2.0",
+        "themehybrid/hybrid-core": "dev-dev as 7.0",
+        "themehybrid/hybrid-tools": "dev-dev as 2.0"
+    },
+    "require-dev": {
+        "alvarodelera/pest-wp-plugin": "^2.0",
+        "pestphp/pest": "^5.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "HBP\\Settings\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HBP\\Settings\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "hybrid-core": {
+            "providers": [
+                "HBP\\Settings\\Providers\\SettingsServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "pest"
+    }
+}
