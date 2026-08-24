@@ -80,8 +80,11 @@ final class Features {
                 ? $this->config->get( "{$this->namespace}.presets.{$active}.features", [] )
                 : [];
 
+            // value() for the same reason enabled() needs it: a preset
+            // override written as a closure is an object to a bare cast, so
+            // every such override would read as true.
             $this->overrides = array_map(
-                static fn( $value ): bool => (bool) $value,
+                static fn( $value ): bool => (bool) value( $value ),
                 $this->flatten( (array) $overrides )
             );
         }

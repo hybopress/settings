@@ -135,6 +135,13 @@ return [
 ];
 ```
 
+The active preset is named at **`{namespace}.presets.active`**, and must be a
+non-empty string. Anything else — a missing key, a typo'd key, `null` — means
+no preset is active, and the whole preset tier is skipped with no error. Every
+read simply falls through to the config tier as though the preset did not
+exist, so a mis-named key looks exactly like a preset whose values happen to
+match the defaults.
+
 Preset bodies may be written with flat dotted keys or as nested arrays; both
 resolve.
 

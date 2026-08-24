@@ -73,6 +73,55 @@ it( 'ignores overrides from a preset that is not active', function (): void {
     expect( $features->enabled( 'social' ) )->toBeTrue();
 } );
 
+/**
+ * A declared default may be a closure, so an expensive or context-dependent
+ * default is only paid for when it is reached.
+ *
+ * A bare cast reads a closure as an object, which is truthy, so every closure
+ * default would report enabled whatever it returns. This is that regression.
+ */
+it( 'resolves a closure declared default', function (): void {
+    $features = features( [ 'features' => [ 'social' => static fn(): bool => false ] ] );
+
+    expect( $features->enabled( 'social' ) )->toBeFalse();
+} );
+
+it( 'resolves a closure declared default that is on', function (): void {
+    $features = features( [ 'features' => [ 'social' => static fn(): bool => true ] ] );
+
+    expect( $features->enabled( 'social' ) )->toBeTrue();
+} );
+
+/**
+ * The same hazard one tier up: preset overrides are flattened and cast, so a
+ * closure override has to resolve before the cast too.
+ */
+it( 'resolves a closure preset override', function (): void {
+    $features = features( [
+        'features' => [ 'social' => true ],
+        'presets'  => [
+            'active' => 'minimal',
+            'minimal' => [ 'features' => [ 'social' => static fn(): bool => false ] ],
+        ],
+    ] );
+
+    expect( $features->enabled( 'social' ) )->toBeFalse();
+} );
+
+it( 'resolves closure defaults through all()', function (): void {
+    $features = features( [
+        'features' => [
+            'social'  => static fn(): bool => false,
+            'gallery' => true,
+        ],
+    ] );
+
+    expect( $features->all() )->toBe( [
+        'social'  => false,
+        'gallery' => true,
+    ] );
+} );
+
 it( 'reports disabled as the inverse of enabled', function (): void {
     $features = features( [ 'features' => [ 'social' => false ] ] );
 
