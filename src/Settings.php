@@ -110,6 +110,17 @@ final class Settings {
      * hierarchy stays a local edit rather than a resolver graph.
      */
     private function resolve( string $key ): mixed {
+        // Above meta on purpose. A lock is not a default -- it is the active
+        // preset stating that this value is fixed for this build. Read below
+        // meta and a stored value would beat it, which is the opposite of what
+        // a lock means, and the control rendering disabled would then be
+        // showing one value while the site used another.
+        $value = $this->fromLock( $key );
+
+        if ( Missing::Value !== $value ) {
+            return $value;
+        }
+
         $value = $this->fromMeta( $key );
 
         if ( Missing::Value === $value ) {
@@ -210,6 +221,53 @@ final class Settings {
 
     private function fromStore( string $key ): mixed {
         return $this->store->has( $key ) ? $this->store->get( $key ) : Missing::Value;
+    }
+
+    /**
+     * The value the active preset fixes for a key, if any.
+     *
+     * A lock entry is `[ 'value' => mixed, 'reason' => string ]`. Only `value`
+     * matters here; `reason` is for the control that renders disabled.
+     */
+    private function fromLock( string $key ): mixed {
+        $active = $this->config->get( "{$this->namespace}.presets.active" );
+
+        if ( ! is_string( $active ) || '' === $active ) {
+            return Missing::Value;
+        }
+
+        $lock = $this->fromMap( "{$this->namespace}.presets.{$active}.locks", $key );
+
+        if ( ! is_array( $lock ) || ! array_key_exists( 'value', $lock ) ) {
+            return Missing::Value;
+        }
+
+        return $lock['value'];
+    }
+
+    /**
+     * Whether the active preset fixes this key.
+     *
+     * Public because the settings screen needs to know: a locked control
+     * renders disabled with its reason rather than editable or absent.
+     */
+    public function locked( string $key ): bool {
+        return Missing::Value !== $this->fromLock( $this->key( $key ) );
+    }
+
+    /**
+     * Why the active preset fixes this key, or an empty string.
+     */
+    public function lockReason( string $key ): string {
+        $active = $this->config->get( "{$this->namespace}.presets.active" );
+
+        if ( ! is_string( $active ) || '' === $active ) {
+            return '';
+        }
+
+        $lock = $this->fromMap( "{$this->namespace}.presets.{$active}.locks", $this->key( $key ) );
+
+        return is_array( $lock ) ? (string) ( $lock['reason'] ?? '' ) : '';
     }
 
     private function fromPreset( string $key ): mixed {
