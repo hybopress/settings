@@ -39,14 +39,19 @@ final class Settings {
 
     private ?Target $target = null;
 
+    private readonly Paths $paths;
+
     public function __construct(
         private readonly Store $store,
         private readonly ConfigRepository $config,
         private readonly string $namespace,
         private readonly ?ObjectMeta $meta = null,
         private readonly string $hookPrefix = 'hbp-settings',
-        private readonly string $metaPrefix = '_hbp_settings_'
+        private readonly string $metaPrefix = '_hbp_settings_',
+        ?Paths $paths = null
     ) {
+        $this->paths = $paths ?? new Paths( $this->namespace );
+
         if ( '' === trim( $this->namespace, " .\t\n\r" ) ) {
             throw new InvalidArgumentException( 'The settings namespace cannot be empty.' );
         }
@@ -230,13 +235,13 @@ final class Settings {
      * matters here; `reason` is for the control that renders disabled.
      */
     private function fromLock( string $key ): mixed {
-        $active = $this->config->get( "{$this->namespace}.presets.active" );
+        $active = $this->config->get( $this->paths->get( 'presets' ) . '.active' );
 
         if ( ! is_string( $active ) || '' === $active ) {
             return Missing::Value;
         }
 
-        $lock = $this->fromMap( "{$this->namespace}.presets.{$active}.locks", $key );
+        $lock = $this->fromMap( $this->paths->get( 'presets' ) . ".{$active}.locks", $key );
 
         if ( ! is_array( $lock ) || ! array_key_exists( 'value', $lock ) ) {
             return Missing::Value;
@@ -259,25 +264,25 @@ final class Settings {
      * Why the active preset fixes this key, or an empty string.
      */
     public function lockReason( string $key ): string {
-        $active = $this->config->get( "{$this->namespace}.presets.active" );
+        $active = $this->config->get( $this->paths->get( 'presets' ) . '.active' );
 
         if ( ! is_string( $active ) || '' === $active ) {
             return '';
         }
 
-        $lock = $this->fromMap( "{$this->namespace}.presets.{$active}.locks", $this->key( $key ) );
+        $lock = $this->fromMap( $this->paths->get( 'presets' ) . ".{$active}.locks", $this->key( $key ) );
 
         return is_array( $lock ) ? (string) ( $lock['reason'] ?? '' ) : '';
     }
 
     private function fromPreset( string $key ): mixed {
-        $active = $this->config->get( "{$this->namespace}.presets.active" );
+        $active = $this->config->get( $this->paths->get( 'presets' ) . '.active' );
 
         if ( ! is_string( $active ) || '' === $active ) {
             return Missing::Value;
         }
 
-        return $this->fromMap( "{$this->namespace}.presets.{$active}", $key );
+        return $this->fromMap( $this->paths->get( 'presets' ) . ".{$active}", $key );
     }
 
     /**

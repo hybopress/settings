@@ -21,6 +21,9 @@ final class SettingsFactory {
     /** @var array<string, \HBP\Settings\Features> */
     private array $features = [];
 
+    /** @var array<string, array<string, string>> */
+    private array $paths = [];
+
     public function __construct(
         private readonly ConfigRepository $config,
         private readonly ?ObjectMeta $meta = null
@@ -43,7 +46,8 @@ final class SettingsFactory {
             new OptionStore( $option ),
             $this->config,
             $namespace,
-            $this->meta
+            $this->meta,
+            paths: $this->pathsFor( $namespace )
         );
     }
 
@@ -53,7 +57,38 @@ final class SettingsFactory {
     public function features( string $namespace ): Features {
         $namespace = trim( $namespace, " .\t\n\r" );
 
-        return $this->features[ $namespace ] ??= new Features( $this->config, $namespace );
+        return $this->features[ $namespace ] ??= new Features( $this->config, $namespace, $this->pathsFor( $namespace ) );
+    }
+
+    /**
+     * Point this namespace's presets, features, tabs or sections elsewhere.
+     *
+     * Paths are relative to the namespace, e.g. `[ 'presets' => 'site.presets' ]`.
+     * Call it before the first read. Instances already built for the
+     * namespace are dropped so none of them keeps the old paths.
+     *
+     * @param array<string, string> $paths
+     */
+    public function paths( string $namespace, array $paths ): void {
+        $namespace = trim( $namespace, " .\t\n\r" );
+
+        $this->paths[ $namespace ] = $paths;
+        unset( $this->features[ $namespace ] );
+
+        foreach ( array_keys( $this->instances ) as $key ) {
+            if ( str_starts_with( $key, "{$namespace}|" ) ) {
+                unset( $this->instances[ $key ] );
+            }
+        }
+    }
+
+    /**
+     * The config paths a namespace reads through.
+     */
+    public function pathsFor( string $namespace ): Paths {
+        $namespace = trim( $namespace, " .\t\n\r" );
+
+        return new Paths( $namespace, $this->paths[ $namespace ] ?? [] );
     }
 
     /**

@@ -48,3 +48,21 @@ it( 'memoises features per namespace', function (): void {
 it( 'rejects an empty namespace', function (): void {
     expect( fn() => factory()->make( '  ' ) )->toThrow( InvalidArgumentException::class );
 } );
+
+it( 'reads presets and features from the paths a namespace sets', function (): void {
+    $factory = factory( [
+        'child' => [
+            'site' => [
+                'features' => [ 'gallery' => [ 'slider' => true ] ],
+                'presets'  => [ 'active' => 'one', 'one' => [ 'title' => 'from preset' ] ],
+            ],
+        ],
+    ] );
+
+    $before = $factory->make( 'child' );
+    $factory->paths( 'child', [ 'presets' => 'site.presets', 'features' => 'site.features' ] );
+
+    expect( $factory->make( 'child' ) )->not->toBe( $before )
+        ->and( $factory->make( 'child' )->get( 'title' ) )->toBe( 'from preset' )
+        ->and( $factory->features( 'child' )->enabled( 'gallery.slider' ) )->toBeTrue();
+} );

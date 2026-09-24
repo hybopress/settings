@@ -24,10 +24,15 @@ final class Features {
     /** @var array<string, bool>|null */
     private ?array $overrides = null;
 
+    private readonly Paths $paths;
+
     public function __construct(
         private readonly ConfigRepository $config,
-        private readonly string $namespace
-    ) {}
+        private readonly string $namespace,
+        ?Paths $paths = null
+    ) {
+        $this->paths = $paths ?? new Paths( $namespace );
+    }
 
     /**
      * @param string $name Bare capability name, e.g. `gallery.slider`.
@@ -44,7 +49,7 @@ final class Features {
         // rather than silently enabling something.
         // value() resolves a declared default written as a closure, which a
         // bare cast would read as an object and so always report enabled.
-        return (bool) value( $this->config->get( "{$this->namespace}.features.{$name}", false ) );
+        return (bool) value( $this->config->get( $this->paths->get( 'features' ) . ".{$name}", false ) );
     }
 
     public function disabled( string $name ): bool {
@@ -57,7 +62,7 @@ final class Features {
      * @return array<string, bool>
      */
     public function all(): array {
-        $declared = (array) $this->config->get( "{$this->namespace}.features", [] );
+        $declared = (array) $this->config->get( $this->paths->get( 'features' ), [] );
         $features = [];
 
         foreach ( array_keys( $this->flatten( $declared ) ) as $name ) {
@@ -74,10 +79,10 @@ final class Features {
      */
     private function overrides(): array {
         if ( null === $this->overrides ) {
-            $active = $this->config->get( "{$this->namespace}.presets.active" );
+            $active = $this->config->get( $this->paths->get( 'presets' ) . '.active' );
 
             $overrides = is_string( $active ) && '' !== $active
-                ? $this->config->get( "{$this->namespace}.presets.{$active}.features", [] )
+                ? $this->config->get( $this->paths->get( 'presets' ) . ".{$active}.features", [] )
                 : [];
 
             // value() for the same reason enabled() needs it: a preset
